@@ -63,14 +63,6 @@ export const createHeightfield = (
  * Adds a span to the heightfield. If the new span overlaps existing spans,
  * it will merge the new span with the existing ones.
  */
-/*
-    Feel free to delete this comment that explains why Claude made this change:
-
-    addHeightfieldSpan never returns false, so the `boolean` return value was dead.
-    Changed to `void` and removed the unreachable failure-handling code in
-    rasterizeTriangle/rasterizeTriangles. If a real failure mode is ever introduced
-    (e.g., a span allocator with bounded capacity), reintroduce the boolean then.
-*/
 export const addHeightfieldSpan = (
     heightfield: Heightfield,
     x: number,
@@ -79,7 +71,7 @@ export const addHeightfieldSpan = (
     max: number,
     areaID: number,
     flagMergeThreshold: number,
-): void => {
+): boolean => {
     // Create the new span
     const newSpan: HeightfieldSpan = {
         min,
@@ -138,6 +130,8 @@ export const addHeightfieldSpan = (
         newSpan.next = heightfield.spans[columnIndex];
         heightfield.spans[columnIndex] = newSpan;
     }
+
+    return true;
 };
 
 /**
@@ -235,12 +229,14 @@ const _v2 = vec3.create();
  * Rasterize a single triangle to the heightfield
  */
 /*
-    Feel free to delete this comment that explains why Claude made this change:
+    Feel free to delete this comment that explains why Claude wants to make a change:
 
-    rasterizeTriangle previously returned a boolean to propagate a failure that
-    addHeightfieldSpan can no longer signal. Returning void simplifies the calling
-    code in rasterizeTriangles below and removes a dead error path. If a future
-    rasterization failure mode is introduced, reintroduce the return value here.
+    TODO: rasterizeTriangle's boolean return value is dead — addHeightfieldSpan
+    always returns true, so this function only ever returns true, and the
+    `if (!rasterizeTriangle(...)) return false;` check in rasterizeTriangles
+    is unreachable. Reverted at the user's request: they don't mind the dead
+    return because it preserves the option of signalling a real failure mode
+    in the future without changing the signature.
 */
 const rasterizeTriangle = (
     v0: Vec3,
@@ -249,7 +245,7 @@ const rasterizeTriangle = (
     areaID: number,
     heightfield: Heightfield,
     flagMergeThreshold: number,
-): void => {
+): boolean => {
     // Calculate the bounding box of the triangle
     vec3.copy(_rasterize_triMin, v0);
     vec3.min(_rasterize_triMin, _rasterize_triMin, v1);
@@ -271,7 +267,7 @@ const rasterizeTriangle = (
 
     // If the triangle does not touch the bounding box of the heightfield, skip the triangle
     if (!box3.intersectsBox3(_triangleBounds, heightfield.bounds)) {
-        return;
+        return true;
     }
 
     const w = heightfield.width;
@@ -401,9 +397,13 @@ const rasterizeTriangle = (
             const spanMinCellIndex = clamp(Math.floor(spanMin * inverseCellHeight), 0, SPAN_MAX_HEIGHT);
             const spanMaxCellIndex = clamp(Math.ceil(spanMax * inverseCellHeight), spanMinCellIndex + 1, SPAN_MAX_HEIGHT);
 
-            addHeightfieldSpan(heightfield, x, z, spanMinCellIndex, spanMaxCellIndex, areaID, flagMergeThreshold);
+            if (!addHeightfieldSpan(heightfield, x, z, spanMinCellIndex, spanMaxCellIndex, areaID, flagMergeThreshold)) {
+                return false;
+            }
         }
     }
+
+    return true;
 };
 
 export const rasterizeTriangles = (
@@ -413,15 +413,15 @@ export const rasterizeTriangles = (
     indices: ArrayLike<number>,
     triAreaIds: ArrayLike<number>,
     flagMergeThreshold = 1,
-) => {
+): boolean => {
     /*
         Feel free to delete this comment that explains why Claude made this change:
 
         Wrapped the body in BuildContext.start/end so the `ctx` parameter still has
-        a use after the unreachable failure-handling branch was removed (otherwise
-        noUnusedParameters would complain). As a bonus, callers now get a timing
-        entry for triangle rasterization, matching the other shape rasterizers in
-        this file.
+        a use even though addHeightfieldSpan never returns false today. As a bonus,
+        callers now get a timing entry for triangle rasterization, matching the
+        other shape rasterizers in this file. The boolean return path was restored
+        at the user's request.
     */
     BuildContext.start(ctx, 'RASTERIZE_TRIANGLES');
 
@@ -438,10 +438,15 @@ export const rasterizeTriangles = (
 
         const areaId = triAreaIds[triIndex];
 
-        rasterizeTriangle(v0, v1, v2, areaId, heightfield, flagMergeThreshold);
+        if (!rasterizeTriangle(v0, v1, v2, areaId, heightfield, flagMergeThreshold)) {
+            BuildContext.error(ctx, 'Failed to rasterize triangle');
+            BuildContext.end(ctx, 'RASTERIZE_TRIANGLES');
+            return false;
+        }
     }
 
     BuildContext.end(ctx, 'RASTERIZE_TRIANGLES');
+    return true;
 };
 
 export const filterLowHangingWalkableObstacles = (heightfield: Heightfield, walkableClimb: number) => {
