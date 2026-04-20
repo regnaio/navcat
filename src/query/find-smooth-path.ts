@@ -23,14 +23,20 @@ export enum FindSmoothPathResultFlags {
 }
 
 /*
-    Feel free to delete this comment that explains why Claude made this change:
+    Feel free to delete this comment that explains why Claude wants to make a change:
 
-    SmoothPathPointFlags previously duplicated StraightPathPointFlags (identical
-    values START=0, END=1, OFFMESH=2). Re-export the canonical enum under both
-    names so existing public API users keep working but there's a single source
-    of truth.
+    TODO: this enum is a verbatim duplicate of StraightPathPointFlags in
+    find-straight-path.ts (same names, same values START=0, END=1, OFFMESH=2).
+    Could be consolidated by re-exporting StraightPathPointFlags under both
+    names, but kept as a separate enum at the user's request — having a
+    distinct symbol per module is clearer when reading call sites and lets the
+    two enums diverge in the future without breaking compatibility.
 */
-export { StraightPathPointFlags as SmoothPathPointFlags } from './find-straight-path';
+export enum SmoothPathPointFlags {
+    START = 0,
+    END = 1,
+    OFFMESH = 2,
+}
 
 export type SmoothPathPoint = {
     position: Vec3;
@@ -169,7 +175,7 @@ export const findSmoothPath = (
         position: vec3.clone(iterPos),
         type: NodeType.POLY,
         nodeRef: result.startNodeRef,
-        flags: StraightPathPointFlags.START,
+        flags: SmoothPathPointFlags.START,
     });
 
     while (polys.length > 0 && result.path.length < maxPoints) {
@@ -218,7 +224,7 @@ export const findSmoothPath = (
                     position: vec3.clone(iterPos),
                     type: NodeType.POLY,
                     nodeRef: result.endNodeRef,
-                    flags: StraightPathPointFlags.END,
+                    flags: SmoothPathPointFlags.END,
                 });
             }
 
@@ -267,7 +273,7 @@ export const findSmoothPath = (
                         position: vec3.clone(iterPos),
                         type: NodeType.OFFMESH,
                         nodeRef: offMeshConRef,
-                        flags: StraightPathPointFlags.OFFMESH,
+                        flags: SmoothPathPointFlags.OFFMESH,
                     });
 
                     const endPosition = enteringFromStart ? offMeshConnection.end : offMeshConnection.start;
