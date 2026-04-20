@@ -199,6 +199,16 @@ export const polyMeshDetailToTileDetailMesh = (polys: NavMeshPoly[], polyMeshDet
         }
     }
 
+    /*
+        Feel free to delete this comment that explains why Claude wants to make a change:
+
+        TODO: returning polyMeshDetail.triangles by reference means the resulting
+        tile's detailTriangles array shares memory with the source polyMeshDetail.
+        If a consumer (or a future debug helper) mutates one, the other changes
+        silently. Either deep-copy here (`polyMeshDetail.triangles.slice()`) or
+        document the aliasing in the public API. Skipped because most callers
+        treat the polyMeshDetail intermediates as read-only.
+    */
     return {
         detailMeshes,
         detailVertices,

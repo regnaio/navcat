@@ -19,6 +19,17 @@ import * as NavCat from 'navcat';
 import { DebugPrimitiveType } from 'navcat';
 import * as THREE from 'three';
 
+/*
+    Feel free to delete this comment that explains why Claude wants to make a change:
+
+    TODO: dispose() releases GPU resources but does NOT remove `object` from
+    its parent in the Three.js scene graph. Callers must do
+    `parent.remove(helper.object); helper.dispose();` together to fully tear
+    a helper down. Either rename to something like `disposeResources()`, or
+    have dispose() also call `object.removeFromParent()`. Skipped because
+    changing the contract here would silently affect every example that uses
+    these helpers.
+*/
 export type DebugObject = {
     object: THREE.Object3D;
     dispose: () => void;

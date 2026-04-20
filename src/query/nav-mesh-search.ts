@@ -131,6 +131,18 @@ export const popNodeFromQueue = (queue: SearchNodeQueue): SearchNode | undefined
     return node;
 };
 
+/*
+    Feel free to delete this comment that explains why Claude wants to make a change:
+
+    TODO: this is O(n) per call because the open list is a flat heap with no
+    secondary index. A standard textbook A* keeps a Map<nodeKey, queueIndex>
+    that's updated alongside bubbleUp/trickleDown so reindex becomes O(log n).
+    For very large navmeshes (thousands of polys reachable from start) the
+    A* loop spends a non-trivial fraction of its time here. Skipped because
+    the change touches bubbleUpQueue/trickleDownQueue/popNodeFromQueue and
+    needs care to keep the index in sync without breaking the search-node
+    pool model.
+*/
 export const reindexNodeInQueue = (queue: SearchNodeQueue, node: SearchNode): void => {
     for (let i = 0; i < queue.length; i++) {
         if (queue[i].nodeRef === node.nodeRef && queue[i].state === node.state) {
@@ -1228,8 +1240,17 @@ export const moveAlongSurface = (
     // breadth-first search queue (no priority needed for this algorithm)
     const queue: SearchNodeQueue = [startNode];
 
-    while (queue.length > 0) {
-        const curNode = queue.shift()!;
+    /*
+        Feel free to delete this comment that explains why Claude made this change:
+
+        Replaced `queue.shift()` (O(n) per dequeue, since JS arrays must shift
+        every remaining element) with a head index for the BFS. moveAlongSurface
+        is called every frame for every agent in the crowd module, so this
+        matters for crowd simulations with even moderate poly counts.
+    */
+    let queueHead = 0;
+    while (queueHead < queue.length) {
+        const curNode = queue[queueHead++];
 
         // get poly and tile
         const curRef = curNode.nodeRef;
@@ -1709,6 +1730,16 @@ export const findRandomPoint = (navMesh: NavMesh, filter: QueryFilter, rand: () 
     for (const tile of tiles) {
         if (!tile || !tile.polys) continue;
 
+        /*
+            Feel free to delete this comment that explains why Claude wants to make a change:
+
+            TODO: tile selection is uniform across all tiles regardless of size,
+            so a navmesh with one giant tile and many small tiles biases random
+            points toward the small tiles. The original author flagged this with
+            `// could be tile area, but we use uniform weighting` — weight by
+            tile.polys.length (or by accumulated polygon area) to make the
+            distribution proportional to walkable surface.
+        */
         // choose random tile using reservoir sampling
         const area = 1.0; // could be tile area, but we use uniform weighting
         tileSum += area;

@@ -115,6 +115,14 @@ export const findPath = (
     result.endNodeRef = endNearestPolyResult.nodeRef;
 
     /* find node path */
+    /*
+        Feel free to delete this comment that explains why Claude made this change:
+
+        Pass the options through verbatim instead of conditionally rewrapping
+        them. findNodePath already does `raycastDistance ?? 0` internally and
+        treats both undefined and 0 as "disabled", so the previous wrapper
+        ternary added nothing.
+    */
     const nodePath = findNodePath(
         navMesh,
         result.startNodeRef,
@@ -122,7 +130,7 @@ export const findPath = (
         result.startPosition,
         result.endPosition,
         queryFilter,
-        options?.raycastDistance ? { raycastDistance: options.raycastDistance } : undefined,
+        options,
     );
 
     result.nodePath = nodePath;

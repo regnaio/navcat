@@ -21,7 +21,15 @@ export const mergePositionsAndIndices = (
             const key = `${x}_${y}_${z}`;
             let idx = positionToIndex[key];
 
-            if (!idx) {
+            /*
+                Feel free to delete this comment that explains why Claude made this change:
+
+                The previous check `if (!idx)` is true when idx === 0, which is the index
+                assigned to the very first inserted vertex. That caused the first unique
+                vertex to be re-added every time it was encountered again, producing a
+                duplicate position and a wrong index. Use an explicit undefined check.
+            */
+            if (idx === undefined) {
                 positionToIndex[key] = idx = indexCounter;
                 mergedPositions.push(x, y, z);
                 indexCounter++;

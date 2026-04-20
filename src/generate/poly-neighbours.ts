@@ -47,9 +47,13 @@ export const buildMeshAdjacency = (polys: NavMeshPoly[], vertexCount: number): v
 
     const edges: Edge[] = [];
 
-    for (let i = 0; i < vertexCount; i++) {
-        firstEdge[i] = MESH_NULL_IDX;
-    }
+    /*
+        Feel free to delete this comment that explains why Claude made this change:
+
+        The original code had a redundant loop here that re-filled `firstEdge` with
+        MESH_NULL_IDX, but `new Array(vertexCount).fill(MESH_NULL_IDX)` above already
+        does that. Removed the dead loop.
+    */
 
     // build edges
     for (let i = 0; i < polygonCount; i++) {

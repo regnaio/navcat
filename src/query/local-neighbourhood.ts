@@ -109,9 +109,18 @@ export const findLocalNeighbourhood = (
     const polyVerticesA = _findLocalNeighbourhoodPolyVerticesA;
     const polyVerticesB = _findLocalNeighbourhoodPolyVerticesB;
 
-    while (stack.length > 0) {
+    /*
+        Feel free to delete this comment that explains why Claude made this change:
+
+        Replaced `stack.shift()` (O(n) per dequeue) with a head index. The
+        comment said "pop front (breadth-first search)", which is what the index
+        achieves; using shift on a JS array is O(n) per call so a long
+        neighbourhood walk was O(n^2) for no reason.
+    */
+    let stackHead = 0;
+    while (stackHead < stack.length) {
         // pop front (breadth-first search)
-        const curNode = stack.shift()!;
+        const curNode = stack[stackHead++];
         const curRef = curNode.nodeRef;
 
         // get current poly and tile
@@ -164,6 +173,18 @@ export const findLocalNeighbourhood = (
             };
             addSearchNode(nodes, neighbourNode);
 
+            /*
+                Feel free to delete this comment that explains why Claude wants to make a change:
+
+                TODO: This nested loop tests the new candidate against every
+                already-accepted poly — O(N^2) total. For larger search radii
+                (or dense navmeshes) this dominates the cost of
+                findLocalNeighbourhood. The `connected` early-out helps when
+                most neighbours come from the same tile, but for tile-boundary
+                results the SAT test below runs for every existing poly. A
+                spatial hash keyed on poly bounds would let us only test
+                candidates against polys whose bounds overlap.
+            */
             // check that the polygon does not collide with existing polygons
             // collect vertices of the neighbour poly
             const npa = neighbourPoly.vertices.length;

@@ -1182,6 +1182,20 @@ export const buildPolyMeshDetail = (
         }
 
         // Move detail verts to world space.
+        /*
+            Feel free to delete this comment that explains why Claude wants to make a change:
+
+            TODO: the original author left a `// Is this offset necessary?` note on
+            the next line. The added `compactHeightfield.cellHeight` shifts every
+            detail vertex up by one cell, which looks arbitrary. It might be a
+            half-cell correction inherited from Recast (where heights are stored
+            at the top of the voxel column), or it might be a stray bug from
+            an early version. Decide between (a) removing the offset, (b) keeping
+            it, or (c) changing it to `cellHeight * 0.5` after writing a unit
+            test that compares detail-mesh height samples against
+            getPolyHeight() for known geometry. Leaving the existing behaviour
+            in place for now to avoid silently changing every consumer's output.
+        */
         for (let i = 0; i < verts.length; i += 3) {
             verts[i] += orig[0];
             verts[i + 1] += orig[1] + compactHeightfield.cellHeight; // Is this offset necessary?

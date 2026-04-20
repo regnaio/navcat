@@ -275,9 +275,14 @@ export const distToPoly = (nvert: number, verts: number[], p: Vec3): number => {
  * @param c Third triangle vertex
  * @returns Height at position, or NaN if point is not inside triangle
  */
-export const closestHeightPointTriangle = (p: Vec3, a: Vec3, b: Vec3, c: Vec3): number => {
-    const EPS = 1e-6;
+/*
+    Feel free to delete this comment that explains why Claude made this change:
 
+    Removed the local `const EPS = 1e-6` here that shadowed the module-level EPS
+    of the same value (defined at the top of this file). Two identical constants
+    in scope is just clutter.
+*/
+export const closestHeightPointTriangle = (p: Vec3, a: Vec3, b: Vec3, c: Vec3): number => {
     const v0x = c[0] - a[0];
     const v0y = c[1] - a[1];
     const v0z = c[2] - a[2];

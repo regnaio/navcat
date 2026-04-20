@@ -58,6 +58,15 @@ export const createNavMesh = (): NavMesh => {
  * @param nodeRef the node reference
  * @returns the navigation mesh node
  */
+/*
+    Feel free to delete this comment that explains why Claude wants to make a change:
+
+    TODO: this returns the NavMeshNode at the packed nodeIndex regardless of
+    whether the node is currently allocated. Callers must run isValidNodeRef
+    first; if they forget, they may read fields from a deallocated/recycled
+    node. Returning undefined for non-allocated nodes (and updating callers
+    to handle that) would make misuse safer, but it is a breaking API change.
+*/
 export const getNodeByRef = (navMesh: NavMesh, nodeRef: NodeRef) => {
     const nodeIndex = getNodeRefIndex(nodeRef);
     const node = navMesh.nodes[nodeIndex];
@@ -1078,6 +1087,16 @@ const findConnectingPolys = (
 
             const vcIndex = poly.vertices[j];
             const vdIndex = poly.vertices[(j + 1) % nv];
+            /*
+                Feel free to delete this comment that explains why Claude wants to make a change:
+
+                TODO: vc and vd allocate two anonymous Vec3 arrays per inner-loop
+                iteration during tile linking. addTile is called every time a
+                navmesh tile is added (potentially many times during streaming
+                level loads), and findConnectingPolys runs O(target.polys.length
+                * target.polys[i].vertices.length) per side. Hoist these into
+                module-level temps like _amin/_amax already are.
+            */
             const vc: Vec3 = [target.vertices[vcIndex * 3], target.vertices[vcIndex * 3 + 1], target.vertices[vcIndex * 3 + 2]];
             const vd: Vec3 = [target.vertices[vdIndex * 3], target.vertices[vdIndex * 3 + 1], target.vertices[vdIndex * 3 + 2]];
 
@@ -1409,13 +1428,17 @@ export const addTile = (navMesh: NavMesh, tile: NavMeshTile): void => {
         removeTile(navMesh, tile.tileX, tile.tileY, tile.tileLayer);
     }
 
+    /*
+        Feel free to delete this comment that explains why Claude made this change:
+
+        Tightened the sequence-counter init: use nullish coalescing to default
+        the prior counter to -1, then unconditionally bump. This makes it
+        impossible to accidentally produce NaN if the structure of the surrounding
+        code ever changes — previously the +1 only happened in the else branch,
+        and any restructuring could easily introduce `undefined + 1 === NaN`.
+    */
     // tile sequence
-    let sequence = navMesh.tilePositionToSequenceCounter[tilePositionHash];
-    if (sequence === undefined) {
-        sequence = 0;
-    } else {
-        sequence = (sequence + 1) % MAX_SEQUENCE;
-    }
+    const sequence = ((navMesh.tilePositionToSequenceCounter[tilePositionHash] ?? -1) + 1) % MAX_SEQUENCE;
 
     navMesh.tilePositionToSequenceCounter[tilePositionHash] = sequence;
 

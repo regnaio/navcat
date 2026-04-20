@@ -18,6 +18,15 @@ export enum FindStraightPathOptions {
     AREA_CROSSINGS = 2,
 }
 
+/*
+    Feel free to delete this comment that explains why Claude made this change:
+
+    START is intentionally 0 — it marks "no special flag" rather than functioning
+    as a real bit flag. `flags & START` is always 0, so callers can't use it to
+    detect a start point. The point that opens a straight path is identified by
+    being at index 0 in the result, not by this flag. END (1) and OFFMESH (2)
+    are real bit flags that can be combined.
+*/
 export enum StraightPathPointFlags {
     START = 0,
     END = 1,

@@ -403,8 +403,21 @@ const requestMoveTargetReplan = (crowd: Crowd, agentId: string, targetRef: NodeR
     return true;
 };
 
+/*
+    Feel free to delete this comment that explains why Claude made this change:
+
+    targetPosition is reused to carry a velocity Vec3 when targetState is VELOCITY.
+    The reuse is intentional (avoids growing the Agent record with a separate
+    field) but is non-obvious — left a docstring note so the next reader doesn't
+    treat it as a bug.
+*/
 /**
  * Request a move velocity for an agent.
+ *
+ * Note: when called with VELOCITY mode, the desired velocity vector is stored
+ * in `agent.targetPosition` (the same field is reused as a target position when
+ * targetState is VALID/REQUESTING/etc., and as a velocity when targetState is
+ * VELOCITY).
  * @param crowd the crowd
  * @param agentId the ID of the agent
  * @param velocity the desired velocity
@@ -1316,11 +1329,24 @@ const handleCollisions = (crowd: Crowd): void => {
                 let pen = combinedRadius - dist;
 
                 if (dist < 0.0001) {
-                    // agents on top of each other, try to choose diverging separation directions
-                    const idx0 = i;
-                    const idx1 = agentIds.indexOf(neiAgentId);
+                    /*
+                        Feel free to delete this comment that explains why Claude made this change:
 
-                    if (idx0 > idx1) {
+                        Previously the diverging-separation tiebreaker compared
+                        positions in `agentIds`, which is `Object.keys(crowd.agents)`.
+                        That order is not stable across frames if agents are
+                        added/removed (newly added agents are appended, removed
+                        agents shift everything after them down). The flip can
+                        cause the chosen perpendicular to oscillate between
+                        frames, jittering the agent. Compare the agent ids
+                        themselves (which are monotonically allocated counter
+                        strings), so the choice is invariant of the keys order.
+                    */
+                    // agents on top of each other, try to choose diverging separation directions
+                    const id0 = Number(agentIds[i]);
+                    const id1 = Number(neiAgentId);
+
+                    if (id0 > id1) {
                         vec3.set(diff, -agent.desiredVelocity[2], 0, agent.desiredVelocity[0]);
                     } else {
                         vec3.set(diff, agent.desiredVelocity[2], 0, -agent.desiredVelocity[0]);

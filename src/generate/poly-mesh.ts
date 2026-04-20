@@ -433,6 +433,18 @@ const uleft = (firstVertex: number[], secondVertex: number[], testVertex: number
     );
 };
 
+/*
+    Feel free to delete this comment that explains why Claude made this change:
+
+    Module-level scratch arrays so getPolyMergeValue's two `uleft()` calls don't
+    allocate 6 anonymous Vec3 arrays per call. getPolyMergeValue is invoked from
+    a O(n^2) loop (every poly pair) inside buildPolyMesh's merge stage, so the
+    GC pressure was non-trivial.
+*/
+const _getPolyMergeValueA: number[] = [0, 0, 0];
+const _getPolyMergeValueB: number[] = [0, 0, 0];
+const _getPolyMergeValueC: number[] = [0, 0, 0];
+
 const getPolyMergeValue = (
     polygons: number[],
     polyAStartIdx: number,
@@ -477,26 +489,26 @@ const getPolyMergeValue = (
     const va = polygons[polyAStartIdx + ((ea + numVertsA - 1) % numVertsA)];
     const vb = polygons[polyAStartIdx + ea];
     const vc = polygons[polyBStartIdx + ((eb + 2) % numVertsB)];
-    if (
-        !uleft(
-            [vertices[va * 3], 0, vertices[va * 3 + 2]],
-            [vertices[vb * 3], 0, vertices[vb * 3 + 2]],
-            [vertices[vc * 3], 0, vertices[vc * 3 + 2]],
-        )
-    ) {
+    _getPolyMergeValueA[0] = vertices[va * 3];
+    _getPolyMergeValueA[2] = vertices[va * 3 + 2];
+    _getPolyMergeValueB[0] = vertices[vb * 3];
+    _getPolyMergeValueB[2] = vertices[vb * 3 + 2];
+    _getPolyMergeValueC[0] = vertices[vc * 3];
+    _getPolyMergeValueC[2] = vertices[vc * 3 + 2];
+    if (!uleft(_getPolyMergeValueA, _getPolyMergeValueB, _getPolyMergeValueC)) {
         return { value: -1, ea: -1, eb: -1 };
     }
 
     const va2 = polygons[polyBStartIdx + ((eb + numVertsB - 1) % numVertsB)];
     const vb2 = polygons[polyBStartIdx + eb];
     const vc2 = polygons[polyAStartIdx + ((ea + 2) % numVertsA)];
-    if (
-        !uleft(
-            [vertices[va2 * 3], 0, vertices[va2 * 3 + 2]],
-            [vertices[vb2 * 3], 0, vertices[vb2 * 3 + 2]],
-            [vertices[vc2 * 3], 0, vertices[vc2 * 3 + 2]],
-        )
-    ) {
+    _getPolyMergeValueA[0] = vertices[va2 * 3];
+    _getPolyMergeValueA[2] = vertices[va2 * 3 + 2];
+    _getPolyMergeValueB[0] = vertices[vb2 * 3];
+    _getPolyMergeValueB[2] = vertices[vb2 * 3 + 2];
+    _getPolyMergeValueC[0] = vertices[vc2 * 3];
+    _getPolyMergeValueC[2] = vertices[vc2 * 3 + 2];
+    if (!uleft(_getPolyMergeValueA, _getPolyMergeValueB, _getPolyMergeValueC)) {
         return { value: -1, ea: -1, eb: -1 };
     }
 

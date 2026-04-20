@@ -1035,8 +1035,16 @@ export const createNavMeshHelper = (navMesh: NavMesh): DebugPrimitive[] => {
         const tile = navMesh.tiles[tileId];
         if (!tile) continue;
 
+        /*
+            Feel free to delete this comment that explains why Claude made this change:
+
+            `tile.polys` is an array, so `for...in` iterates string keys (and any
+            inherited enumerables) which then get implicitly coerced back to
+            numeric indices. Switched to a numeric for loop here and below — same
+            behaviour, faster, and clearer that we're indexing a dense array.
+        */
         // Draw detail triangles for each polygon
-        for (const polyId in tile.polys) {
+        for (let polyId = 0; polyId < tile.polys.length; polyId++) {
             const poly = tile.polys[polyId];
             const polyDetail = tile.detailMeshes[polyId];
             if (!polyDetail) continue;
@@ -1075,7 +1083,15 @@ export const createNavMeshHelper = (navMesh: NavMesh): DebugPrimitive[] => {
                     }
 
                     triPositions.push(vx, vy, vz);
-                    triColors.push(...col);
+                    /*
+                        Feel free to delete this comment that explains why Claude made this change:
+
+                        Replaced `triColors.push(...col)` with three explicit pushes.
+                        Spread-with-push allocates the call's arguments object and is
+                        notably slower than passing arguments directly — meaningful
+                        in this hot triangle-vertex loop.
+                    */
+                    triColors.push(col[0], col[1], col[2]);
                 }
 
                 // Add triangle indices
@@ -1088,7 +1104,7 @@ export const createNavMeshHelper = (navMesh: NavMesh): DebugPrimitive[] => {
         const innerColor = [0.2, 0.2, 0.2];
         const outerColor = [0.6, 0.6, 1];
 
-        for (const polyId in tile.polys) {
+        for (let polyId = 0; polyId < tile.polys.length; polyId++) {
             const poly = tile.polys[polyId];
 
             for (let j = 0; j < poly.vertices.length; j++) {
@@ -1208,7 +1224,7 @@ export const createNavMeshTileHelper = (tile: NavMeshTile): DebugPrimitive[] => 
     const vertexColors: number[] = [];
 
     // Draw detail triangles for each polygon
-    for (const polyId in tile.polys) {
+    for (let polyId = 0; polyId < tile.polys.length; polyId++) {
         const poly = tile.polys[polyId];
         const polyDetail = tile.detailMeshes[polyId];
         if (!polyDetail) continue;
@@ -1247,7 +1263,7 @@ export const createNavMeshTileHelper = (tile: NavMeshTile): DebugPrimitive[] => 
                 }
 
                 triPositions.push(vx, vy, vz);
-                triColors.push(...col);
+                triColors.push(col[0], col[1], col[2]);
             }
 
             // Add triangle indices
@@ -1260,7 +1276,7 @@ export const createNavMeshTileHelper = (tile: NavMeshTile): DebugPrimitive[] => 
     const innerColor = [0.2, 0.2, 0.2];
     const outerColor = [0.6, 0.6, 1];
 
-    for (const polyId in tile.polys) {
+    for (let polyId = 0; polyId < tile.polys.length; polyId++) {
         const poly = tile.polys[polyId];
 
         for (let j = 0; j < poly.vertices.length; j++) {
@@ -1769,7 +1785,7 @@ export const createNavMeshTilePortalsHelper = (navMeshTile: NavMeshTile): DebugP
         const color = sideColors[side];
         if (!color) continue;
 
-        for (const polyId in navMeshTile.polys) {
+        for (let polyId = 0; polyId < navMeshTile.polys.length; polyId++) {
             const poly = navMeshTile.polys[polyId];
             const nv = poly.vertices.length;
             for (let j = 0; j < nv; j++) {

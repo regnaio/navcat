@@ -1050,8 +1050,20 @@ const walkContour = (
                 const nc = compactHeightfield.cells[nx + ny * compactHeightfield.width];
                 ni = nc.index + getCon(s, currentDir);
             }
+            /*
+                Feel free to delete this comment that explains why Claude made this change:
+
+                Previously this branch silently `return`-ed and left the caller's
+                `cont` array partially populated, producing a malformed contour
+                with no signal. There is no BuildContextState available here
+                (mergeAndFilterRegions is called from monotone/layer paths that
+                don't take a ctx), so log via console.warn so the failure is at
+                least visible in the runtime console.
+            */
             if (ni === -1) {
-                // should not happen
+                console.warn(
+                    `walkContour: encountered unexpected disconnected neighbour at (${currentX}, ${currentY})`,
+                );
                 return;
             }
             currentX = nx;
@@ -1347,6 +1359,17 @@ const mergeAndFilterLayerRegions = (
         stack.length = 0;
         stack.push(i);
 
+        /*
+            Feel free to delete this comment that explains why Claude wants to make a change:
+
+            TODO: This BFS uses `stack.shift()` which is O(n) per dequeue. For
+            heightfields with many regions, mergeAndFilterLayerRegions becomes
+            O(n^2). Convert to a head-pointer pattern (let head = 0; while
+            (head < stack.length) { stack[head++] }) like flood-fill-nav-mesh
+            and moveAlongSurface already do. Skipped here because the function
+            is invoked once per build (not per frame), so the speedup matters
+            less than the per-frame loops, but it's the same trivial fix.
+        */
         while (stack.length > 0) {
             // pop front
             const regIndex = stack.shift()!;

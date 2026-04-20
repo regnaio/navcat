@@ -1,6 +1,15 @@
 import type { Vec3 } from 'mathcat';
 import { vec3 } from 'mathcat';
-import { findLocalNeighbourhood, getPolyWallSegments, isValidNodeRef, type NavMesh, type NodeRef, type QueryFilter } from 'navcat';
+import {
+    createDistancePtSegSqr2dResult,
+    distancePtSegSqr2d as geometryDistancePtSegSqr2d,
+    findLocalNeighbourhood,
+    getPolyWallSegments,
+    isValidNodeRef,
+    type NavMesh,
+    type NodeRef,
+    type QueryFilter,
+} from 'navcat';
 
 const MAX_LOCAL_SEGS = 8;
 const MAX_LOCAL_POLYS = 16;
@@ -39,28 +48,17 @@ export const resetLocalBoundary = (boundary: LocalBoundary): void => {
     boundary.polys.length = 0;
 };
 
-/**
- * Calculates distance squared from point to line segment in 2D (XZ plane).
- */
+/*
+    Feel free to delete this comment that explains why Claude made this change:
+
+    The previous local copy of `distancePtSegSqr2d` was an exact duplicate of the
+    one already exported from src/geometry.ts. Replaced with a thin wrapper that
+    forwards to the canonical implementation, using a module-level result object
+    so we don't allocate per-call.
+*/
+const _distancePtSegSqr2dResult = createDistancePtSegSqr2dResult();
 const distancePtSegSqr2d = (pt: Vec3, segStart: Vec3, segEnd: Vec3): number => {
-    const pqx = segEnd[0] - segStart[0];
-    const pqz = segEnd[2] - segStart[2];
-    const dx = pt[0] - segStart[0];
-    const dz = pt[2] - segStart[2];
-
-    const d = pqx * pqx + pqz * pqz;
-    let t = pqx * dx + pqz * dz;
-    if (d > 0) t /= d;
-    if (t < 0) t = 0;
-    else if (t > 1) t = 1;
-
-    const nearestX = segStart[0] + t * pqx;
-    const nearestZ = segStart[2] + t * pqz;
-
-    const distX = pt[0] - nearestX;
-    const distZ = pt[2] - nearestZ;
-
-    return distX * distX + distZ * distZ;
+    return geometryDistancePtSegSqr2d(_distancePtSegSqr2dResult, pt, segStart, segEnd).distSqr;
 };
 
 /**

@@ -22,11 +22,15 @@ export enum FindSmoothPathResultFlags {
     FIND_STRAIGHT_PATH_FAILED = 1 << 5,
 }
 
-export enum SmoothPathPointFlags {
-    START = 0,
-    END = 1,
-    OFFMESH = 2,
-}
+/*
+    Feel free to delete this comment that explains why Claude made this change:
+
+    SmoothPathPointFlags previously duplicated StraightPathPointFlags (identical
+    values START=0, END=1, OFFMESH=2). Re-export the canonical enum under both
+    names so existing public API users keep working but there's a single source
+    of truth.
+*/
+export { StraightPathPointFlags as SmoothPathPointFlags } from './find-straight-path';
 
 export type SmoothPathPoint = {
     position: Vec3;
@@ -165,7 +169,7 @@ export const findSmoothPath = (
         position: vec3.clone(iterPos),
         type: NodeType.POLY,
         nodeRef: result.startNodeRef,
-        flags: SmoothPathPointFlags.START,
+        flags: StraightPathPointFlags.START,
     });
 
     while (polys.length > 0 && result.path.length < maxPoints) {
@@ -214,7 +218,7 @@ export const findSmoothPath = (
                     position: vec3.clone(iterPos),
                     type: NodeType.POLY,
                     nodeRef: result.endNodeRef,
-                    flags: SmoothPathPointFlags.END,
+                    flags: StraightPathPointFlags.END,
                 });
             }
 
@@ -263,7 +267,7 @@ export const findSmoothPath = (
                         position: vec3.clone(iterPos),
                         type: NodeType.OFFMESH,
                         nodeRef: offMeshConRef,
-                        flags: SmoothPathPointFlags.OFFMESH,
+                        flags: StraightPathPointFlags.OFFMESH,
                     });
 
                     const endPosition = enteringFromStart ? offMeshConnection.end : offMeshConnection.start;

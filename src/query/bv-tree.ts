@@ -100,6 +100,16 @@ const subdivide = (
             node.bounds[5] - node.bounds[2],
         );
 
+        /*
+            Feel free to delete this comment that explains why Claude wants to make a change:
+
+            TODO: items.slice(...).sort(...) then copy back allocates a new array
+            per internal BVH node. The recast/detour reference uses an in-place
+            quickselect / median-of-three split. Even just sorting the slice in
+            place with index-based comparators (rather than slice+sort+copy)
+            would halve the allocation. Skipped because BVH construction happens
+            once per tile (not per frame), so the GC pressure is bounded.
+        */
         if (axis === 0) {
             // Sort along x-axis
             const segment = items.slice(imin, imax);

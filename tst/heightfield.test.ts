@@ -267,6 +267,14 @@ describe('heightfield', () => {
         });
     });
 
+    /*
+        Feel free to delete this comment that explains why Claude made this change:
+
+        rasterizeTriangles now returns void (the previous boolean return was always
+        true and the unreachable failure path has been removed). Each test below
+        used to assign and assert `expect(result).toBe(true)` — those assertions
+        are gone and the calls are now bare statements.
+    */
     describe('rasterizeTriangles', () => {
         test('rasterizes single horizontal triangle', () => {
             const bounds: Box3 = [0, 0, 0, 10, 10, 10];
@@ -288,9 +296,8 @@ describe('heightfield', () => {
             const triAreaIds = [1];
 
             const ctx = BuildContext.create();
-            const result = rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
+            rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
 
-            expect(result).toBe(true);
             // Check that some spans were created
             let spanCount = 0;
             for (const span of heightfield.spans) {
@@ -319,9 +326,8 @@ describe('heightfield', () => {
             const triAreaIds = [1];
 
             const ctx = BuildContext.create();
-            const result = rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
+            rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
 
-            expect(result).toBe(true);
             let spanCount = 0;
             for (const span of heightfield.spans) {
                 if (span !== null) spanCount++;
@@ -339,9 +345,8 @@ describe('heightfield', () => {
             const triAreaIds = [1];
 
             const ctx = BuildContext.create();
-            const result = rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
+            rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
 
-            expect(result).toBe(true);
             // No spans should be created
             for (const span of heightfield.spans) {
                 expect(span).toBeNull();
@@ -368,9 +373,8 @@ describe('heightfield', () => {
             const triAreaIds = [1];
 
             const ctx = BuildContext.create();
-            const result = rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
+            rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
 
-            expect(result).toBe(true);
             // Should still create spans for the part inside
             let spanCount = 0;
             for (const span of heightfield.spans) {
@@ -389,9 +393,8 @@ describe('heightfield', () => {
             const triAreaIds = [1];
 
             const ctx = BuildContext.create();
-            const result = rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
+            rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
 
-            expect(result).toBe(true);
         });
 
         test('rasterizes multiple overlapping triangles', () => {
@@ -404,9 +407,8 @@ describe('heightfield', () => {
             const triAreaIds = [1, 2];
 
             const ctx = BuildContext.create();
-            const result = rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
+            rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
 
-            expect(result).toBe(true);
             // Overlapping areas should have merged spans
             let spanCount = 0;
             for (const span of heightfield.spans) {
@@ -425,9 +427,8 @@ describe('heightfield', () => {
             const triAreaIds = [1];
 
             const ctx = BuildContext.create();
-            const result = rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
+            rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
 
-            expect(result).toBe(true); // Should not crash
         });
 
         test('respects flagMergeThreshold for overlapping geometry', () => {
@@ -440,9 +441,8 @@ describe('heightfield', () => {
 
             const ctx = BuildContext.create();
             const flagMergeThreshold = 1;
-            const result = rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds, flagMergeThreshold);
+            rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds, flagMergeThreshold);
 
-            expect(result).toBe(true);
             // Should merge and respect area priority
         });
 
@@ -456,9 +456,8 @@ describe('heightfield', () => {
             const triAreaIds = [1];
 
             const ctx = BuildContext.create();
-            const result = rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
+            rasterizeTriangles(ctx, heightfield, vertices, indices, triAreaIds);
 
-            expect(result).toBe(true);
             // Should create spans across multiple cells
             let spanCount = 0;
             for (const span of heightfield.spans) {

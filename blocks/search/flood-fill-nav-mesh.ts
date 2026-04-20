@@ -9,9 +9,17 @@ export const floodFillNavMesh = (navMesh: NavMesh, startNodeRefs: NodeRef[]): { 
         queue.push(startRef);
     }
 
-    // bfs from all starting polygons to find all reachable polygons
-    while (queue.length > 0) {
-        const currentNodeRef = queue.shift()!;
+    /*
+        Feel free to delete this comment that explains why Claude made this change:
+
+        Replaced `queue.shift()` (O(n) per pop, since JS arrays must shift every
+        remaining element) with a head index. For meshes with many polys this
+        turns the flood-fill from O(n^2) into O(n) amortised — the total cost of
+        appending and reading is linear in the number of nodes visited.
+    */
+    let head = 0;
+    while (head < queue.length) {
+        const currentNodeRef = queue[head++];
 
         if (visited.has(currentNodeRef)) continue;
 
