@@ -94,6 +94,11 @@
         "description": "Example of using off-mesh connections in a navmesh",
         "tags": ["navmesh", "off-mesh"]
     },
+    "example-auto-off-mesh-connections": {
+        "title": "Auto Off-Mesh Connections",
+        "description": "Auto-generates off-mesh connections by analyzing navmesh border edges and testing jump/climb-down trajectories against the solid heightfield",
+        "tags": ["navmesh", "off-mesh", "jump", "auto"]
+    },
     "example-upload-model": {
         "title": "Upload Model",
         "description": "Example of uploading a model and generating a navmesh from it",
