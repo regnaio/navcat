@@ -13,16 +13,126 @@ import {
 export type JumpLinkType = 'jump' | 'climb-down';
 
 export type JumpLinkBuilderConfig = {
+    /**
+     * Sample density along edges and trajectories — match the navmesh.
+     *
+     * xz-plane voxel size of the navmesh build, in world units.
+     * Controls how densely we sample along each edge and along each trajectory.
+     * Should match the `cellSize` used to generate the navmesh; if it's smaller
+     * we waste work, if larger we may miss thin gaps.
+     */
     cellSize: number;
+
+    /**
+     * Sample density along trajectories vertically — match the navmesh.
+     *
+     * y-axis voxel size of the navmesh build, in world units.
+     * Used to convert solid-heightfield span indices back to world y coordinates,
+     * and as a step size (along with cellSize) when walking a trajectory for
+     * collision checks. Should match the `cellHeight` used to generate the navmesh.
+     */
     cellHeight: number;
+
+    /**
+     * Landing must be at least 2·r wide; fan starts 2·r from edge.
+     *
+     * Agent radius in world units. Drives two things:
+     *   1. The landing fan starts at 2·agentRadius out from the edge — i.e. the
+     *      nearest sampled landing position leaves enough lateral room for the
+     *      agent's body to clear the wall it just jumped off of.
+     *   2. A discovered jump segment is rejected if its lateral width is less
+     *      than 2·agentRadius, since the agent wouldn't physically fit on it.
+     */
     agentRadius: number;
+
+    /**
+     * Trajectory body-cylinder for ceiling / wall checks.
+     *
+     * Agent height in world units. Used during trajectory collision checks: at
+     * every step along a candidate arc we sweep a vertical box from
+     * `p.y + groundTolerance` to `p.y + agentHeight` and reject the trajectory
+     * if any solid-heightfield span overlaps it. So this is "is there a ceiling
+     * or overhang in the way?".
+     */
     agentHeight: number;
+
+    /**
+     * How far below the edge the takeoff probes; max Δy between two landing
+     * samples joined into the same link.
+     *
+     * Maximum step-up the agent can climb without jumping, in world units. Used
+     * for two things:
+     *   1. The takeoff sample is placed `agentClimb` BELOW the edge's y, so we
+     *      probe ground that's still on-foot reachable from the edge polygon.
+     *   2. Flood-fill grouping of valid landing samples joins two neighbours
+     *      only if |Δy| < agentClimb — this keeps each emitted jump link
+     *      pointing at one continuous ledge rather than spanning a step.
+     */
     agentClimb: number;
+
+    /**
+     * y-bias so the trajectory's own ground doesn't self-collide.
+     *
+     * Vertical clearance above the trajectory, in world units. The trajectory's
+     * own ground would otherwise count as a collision (since the path runs along
+     * it); this lifts the test box up by groundTolerance so we only catch real
+     * obstacles (overhangs, walls). Typical values are a few cm.
+     */
     groundTolerance: number;
+
+    /**
+     * How far back from the edge the takeoff sits.
+     *
+     * Perpendicular offset of the takeoff sample from the edge, in world units.
+     * The "start" segment is `edge + az·startDistance + ay·(-agentClimb)` — i.e.
+     * we sample ground `startDistance` units perpendicular to the edge (into the
+     * source polygon) and slightly below it. Small values (~0.3) keep the sample
+     * adjacent to the edge.
+     */
     startDistance: number;
+
+    /**
+     * Furthest landing distance — "max jump length".
+     *
+     * Distance from the edge to the outermost landing sample, in world units.
+     * The landing fan is sampled along `az` from `2·agentRadius` out to
+     * `endDistance`. Larger values let the algorithm discover longer jumps, at
+     * the cost of more heightfield work per edge.
+     */
     endDistance: number;
+
+    /**
+     * Lower bound (relative to edge.y) of the landing-search y-window — negative
+     * to look below the edge.
+     *
+     * Lower bound (relative to the edge's y) of the y-window in which we look
+     * for landing surfaces, in world units. Typically negative — e.g. -0.5
+     * means "consider landing surfaces up to 0.5 units below the edge". Together
+     * with maxHeight this defines the vertical search range of the ground probe
+     * at each landing-fan sample.
+     */
     minHeight: number;
+
+    /**
+     * Upper bound (relative to edge.y) of the landing-search y-window —
+     * positive to also discover jump-UP links.
+     *
+     * Upper bound (relative to the edge's y) of the y-window in which we look
+     * for landing surfaces, in world units. Typically positive — e.g. 2.0 means
+     * "also consider landing surfaces up to 2 units above the edge", which lets
+     * the algorithm discover jump-UP links as well as jump-down/across.
+     */
     maxHeight: number;
+
+    /**
+     * Parabolic arc peak — "how high can the agent jump".
+     *
+     * Peak height of the parabolic jump arc above the higher of the takeoff and
+     * landing points, in world units. Larger values let trajectories clear
+     * taller obstacles between takeoff and landing, at the cost of accepting
+     * jumps that aren't physically realistic for the agent. Unused for
+     * `'climb-down'` trajectories.
+     */
     jumpHeight: number;
 };
 
