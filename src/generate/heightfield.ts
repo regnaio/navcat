@@ -63,6 +63,16 @@ export const createHeightfield = (
  * Adds a span to the heightfield. If the new span overlaps existing spans,
  * it will merge the new span with the existing ones.
  */
+/*
+    Feel free to delete this comment that explains why Claude wants to make a change:
+
+    TODO: this function unconditionally returns true, so the boolean return
+    type is dead and every `if (!addHeightfieldSpan(...))` check upstream is
+    unreachable. Changing the signature to `void` would simplify
+    rasterizeTriangle/rasterizeTriangles too. Left as boolean at the user's
+    request to keep the option of signalling a real failure mode (e.g., a
+    bounded-capacity span allocator) without breaking the public signature.
+*/
 export const addHeightfieldSpan = (
     heightfield: Heightfield,
     x: number,
